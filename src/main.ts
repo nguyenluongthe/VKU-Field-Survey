@@ -169,13 +169,21 @@ const sendSyncSuccessAlert = async (count: number) => {
   }
 };
 
-// Register Service Worker for PWA (Browser fallback)
+// Service Worker handling: Only in browser PWA mode, never in native app
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('SW registered'))
-      .catch(error => console.error('SW error', error));
-  });
+  if (Capacitor.isNativePlatform()) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const reg of registrations) {
+        reg.unregister();
+      }
+    });
+  } else {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('SW registered'))
+        .catch(error => console.error('SW error', error));
+    });
+  }
 }
 
 // Background Sync Queue
