@@ -51,19 +51,56 @@ npm run server
 4. Bỏ tick chế độ **Offline** để khôi phục mạng. Hệ thống sẽ tự động đồng bộ.
 5. Mở file `db.json` trong thư mục dự án để kiểm chứng dữ liệu đã được đẩy lên!
 
-## 📱 Đóng gói thành ứng dụng Android (APK)
-Để đóng gói thành app cài được lên điện thoại Android:
-1. Đảm bảo máy tính đã cài đặt **Android Studio**.
-2. Build mã nguồn web tĩnh:
-   ```bash
-   npm run build
-   ```
-3. Đồng bộ với Capacitor và mở Android Studio:
-   ```bash
-   npx cap sync
-   npx cap open android
-   ```
-4. Trên giao diện Android Studio, chọn **Build > Build Bundle(s) / APK(s) > Build APK(s)** để xuất file cài đặt.
+## 📱 Quy trình chuyển đổi sang Native Android & Đóng gói Signed APK
+
+### Bước 1: Build & Đồng bộ mã nguồn với Capacitor
+Chạy chuỗi lệnh chuẩn bị:
+```bash
+npm run build && npx cap sync && npx cap open android
+```
+
+### Bước 2: Tạo file Signed APK trong Android Studio
+1. Trong cửa sổ **Android Studio**, đợi Gradle hoàn tất đồng bộ dự án.
+2. Trên thanh menu chính, chọn **Build** > **Generate Signed Bundle / APK...**.
+3. Chọn tùy chọn **APK** và nhấn **Next**.
+4. Thiết lập **Key store path**:
+   - Nếu đã có Keystore: Nhấn **Choose existing...** và trỏ đến file `.jks` / `.keystore`.
+   - Nếu chưa có: Nhấn **Create new...**, chọn nơi lưu (ví dụ `my-release-key.jks`), nhập mật khẩu, Alias (`fieldsurvey`), và điền thông tin tối thiểu (Tên, Tổ chức).
+5. Nhập mật khẩu Key store và Key password, nhấn **Next**.
+6. Chọn Build Variants là **release** (hoặc debug nếu dùng để test nội bộ), tích chọn chữ ký V1 (Jar Signature) và V2 (Full APK Signature) nếu có.
+7. Nhấn **Finish**. File APK đã ký sẽ được xuất ra thư mục `android/app/release/app-release.apk`.
+
+---
+
+## 🧪 Hướng dẫn kiểm thử trên thiết bị Android thật (Step 6)
+
+### 1. Chuẩn bị môi trường
+- Đảm bảo điện thoại Android và máy tính cùng kết nối vào **chung một mạng Wi-Fi**.
+- Tìm địa chỉ IP nội bộ của máy tính:
+  - Trên Windows: Mở Command Prompt gõ `ipconfig` (tìm dòng `IPv4 Address`, ví dụ: `192.168.1.50`).
+- Khởi động mock server trên máy tính:
+  ```bash
+  npm run server
+  ```
+- Cài đặt file APK lên điện thoại hoặc chạy trực tiếp qua cáp USB Debugging từ Android Studio.
+
+### 2. Kịch bản kiểm thử (Test Matrix)
+1. **Cấu hình địa chỉ Server**:
+   - Mở app trên điện thoại, tại ô **Server**, nhập: `http://<IP_MÁY_TÍNH>:3000` (ví dụ `http://192.168.1.50:3000`) và bấm **Save IP**.
+2. **Kiểm thử Camera phần cứng**:
+   - Nhấn **📷 Take Photo (Camera)**. App sẽ yêu cầu cấp quyền máy ảnh và khởi chạy trực tiếp ứng dụng Camera native của điện thoại. Chụp và xác nhận để hiển thị ảnh preview.
+3. **Kiểm thử GPS Định vị**:
+   - Nhấn **📍 Get Location (GPS)**. App yêu cầu cấp quyền vị trí, đọc tọa độ vệ tinh GPS chính xác và hiển thị `Lat: ... Lng: ...`.
+4. **Kiểm thử Lưu nháp Ngoại tuyến (Offline Capture)**:
+   - Tắt Wi-Fi và 4G trên điện thoại.
+   - Nhập tên địa điểm, ghi chú và nhấn **Save Inspection**.
+   - Thông báo hiện: *"Đã lưu vào bộ nhớ tạm (Draft). Sẽ đồng bộ khi có mạng."* Dữ liệu được lưu trữ an toàn trong IndexedDB.
+5. **Kiểm thử Đồng bộ tự động & Thông báo đẩy (Sync-on-reconnect & Notification)**:
+   - Bật lại Wi-Fi/4G trên điện thoại.
+   - Ứng dụng ngay lập tức phát hiện mạng trực tuyến (`Online`), tự động kích hoạt `processSyncQueue()`.
+   - Thiết bị nhận được **Native Notification** kèm âm thanh / rung: *"Đồng bộ thành công! Đã đồng bộ X bản ghi lên hệ thống."*
+   - Kiểm tra file `db.json` trên máy tính để thấy bản ghi vừa được đồng bộ hoàn chỉnh!
 
 ## Giấy phép
 Thuộc quyền sở hữu nội bộ.
+
